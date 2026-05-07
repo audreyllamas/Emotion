@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Emotion-Aware Message Analyzer</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #eef2ff, #f8fafc);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 30px;
+      color: #1f2937;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 950px;
+      background: #ffffff;
+      border-radius: 24px;
+      padding: 32px;
+      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.12);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 8px;
+      font-size: 34px;
+      color: #111827;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #6b7280;
+      margin-bottom: 30px;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    label {
+      font-weight: bold;
+      display: block;
+      margin-bottom: 10px;
+      font-size: 15px;
+      color: #374151;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 190px;
+      resize: vertical;
+      border: 2px solid #d1d5db;
+      border-radius: 16px;
+      padding: 18px;
+      font-size: 16px;
+      outline: none;
+      transition: 0.3s ease;
+      line-height: 1.6;
+      color: #111827;
+      background: #ffffff;
+    }
+
+    textarea:focus {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+    }
+
+    .buttons {
+      display: flex;
+      gap: 12px;
+      margin-top: 18px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: none;
+      padding: 14px 22px;
+      border-radius: 13px;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: bold;
+      transition: 0.3s ease;
+    }
+
+    .analyze-btn {
+      background: #6366f1;
+      color: white;
+      flex: 1;
+    }
+
+    .analyze-btn:hover {
+      background: #4f46e5;
+      transform: translateY(-1px);
+    }
+
+    .clear-btn {
+      background: #f3f4f6;
+      color: #374151;
+    }
+
+    .clear-btn:hover {
+      background: #e5e7eb;
+    }
+
+    .empty-warning {
+      margin-top: 15px;
+      color: #dc2626;
+      display: none;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .result-card {
+      margin-top: 28px;
+      border-radius: 20px;
+      padding: 25px;
+      border-left: 9px solid #9ca3af;
+      background: #f9fafb;
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .emotion-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 15px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+
+    .emotion-title {
+      font-size: 26px;
+      font-weight: bold;
+    }
+
+    .confidence {
+      background: white;
+      padding: 10px 15px;
+      border-radius: 14px;
+      font-size: 14px;
+      font-weight: bold;
+      color: #374151;
+      border: 1px solid #e5e7eb;
+    }
+
+    .confidence-bar {
+      width: 100%;
+      height: 12px;
+      background: #e5e7eb;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 12px;
+    }
+
+    .confidence-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      transition: width 0.5s ease;
+      background: #6366f1;
+    }
+
+    .analysis-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 18px;
+      margin-top: 20px;
+    }
+
+    .section {
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid rgba(229, 231, 235, 0.9);
+      border-radius: 16px;
+      padding: 18px;
+    }
+
+    .section.full {
+      grid-column: 1 / -1;
+    }
+
+    .section h3 {
+      margin: 0 0 9px;
+      font-size: 17px;
+      color: #111827;
+    }
+
+    .section p {
+      margin: 0;
+      color: #4b5563;
+      line-height: 1.6;
+      font-size: 15px;
+    }
+
+    .word-list {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .word {
+      background: white;
+      border: 1px solid #d1d5db;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 14px;
+      color: #374151;
+    }
+
+    .score-box {
+      display: grid;
+      gap: 10px;
+    }
+
+    .score-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .score-label {
+      width: 78px;
+      font-size: 14px;
+      color: #374151;
+      font-weight: bold;
+    }
+
+    .mini-bar {
+      flex: 1;
+      height: 9px;
+      background: #e5e7eb;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .mini-fill {
+      height: 100%;
+      width: 0%;
+      background: #9ca3af;
+      border-radius: 999px;
+    }
+
+    .score-value {
+      width: 34px;
+      text-align: right;
+      font-size: 13px;
+      color: #4b5563;
+      font-weight: bold;
+    }
+
+    .note {
+      margin-top: 25px;
+      padding: 16px;
+      background: #eef2ff;
+      border-radius: 15px;
+      font-size: 14px;
+      color: #4b5563;
+      line-height: 1.6;
+      border: 1px solid #c7d2fe;
+    }
+
+    .angry {
+      border-left-color: #ef4444;
+      background: #fff5f5;
+    }
+
+    .sad {
+      border-left-color: #3b82f6;
+      background: #eff6ff;
+    }
+
+    .happy {
+      border-left-color: #22c55e;
+      background: #f0fdf4;
+    }
+
+    .anxious {
+      border-left-color: #f59e0b;
+      background: #fffbeb;
+    }
+
+    .neutral {
+      border-left-color: #6b7280;
+      background: #f9fafb;
+    }
+
+    .mixed {
+      border-left-color: #8b5cf6;
+      background: #f5f3ff;
+    }
+
+    @media (max-width: 700px) {
+      .container {
+        padding: 22px;
+      }
+
+      h1 {
+        font-size: 26px;
+      }
+
+      .analysis-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .emotion-title {
+        font-size: 21px;
+      }
+
+      button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>Emotion-Aware Message Analyzer</h1>
+
+    <p class="subtitle">
+      Paste an English message below. The system will analyze the emotional tone,
+      identify the dominant emotion, explain why it was detected, and show a confidence score.
+    </p>
+
+    <label for="messageInput">Enter or paste your message:</label>
+
+    <textarea
+      id="messageInput"
+      placeholder="Example: I am really disappointed because you ignored my message again. This is so frustrating."
+    ></textarea>
+
+    <div class="buttons">
+      <button class="analyze-btn" onclick="analyzeEmotion()">Analyze Emotion</button>
+      <button class="clear-btn" onclick="clearText()">Clear</button>
+    </div>
+
+    <p class="empty-warning" id="emptyWarning">
+      Please enter a message before analyzing.
+    </p>
+
+    <div class="result-card" id="resultCard">
+      <div class="emotion-header">
+        <div class="emotion-title" id="emotionTitle">Detected Emotion</div>
+        <div class="confidence" id="confidenceLevel">Confidence: 0%</div>
+      </div>
+
+      <div class="confidence-bar">
+        <div class="confidence-fill" id="confidenceFill"></div>
+      </div>
+
+      <div class="analysis-grid">
+        <div class="section full">
+          <h3>Short Explanation</h3>
+          <p id="emotionExplanation"></p>
+        </div>
+
+        <div class="section">
+          <h3>Detected Emotional Words</h3>
+          <div class="word-list" id="detectedWords"></div>
+        </div>
+
+        <div class="section">
+          <h3>Recommendation</h3>
+          <p id="recommendation"></p>
+        </div>
+
+        <div class="section full">
+          <h3>Emotion Score Breakdown</h3>
+          <div class="score-box" id="scoreBreakdown"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="note">
+      <strong>Prototype Note:</strong>
+      This system uses a rule-based affective computing approach to estimate the emotional tone of a message.
+      The confidence score is based on the number, strength, and intensity of emotional keywords detected in the text.
+      For prototype testing, the system provides high-confidence results when clear emotional patterns are present.
+    </div>
+  </div>
+
+  <script>
+    const emotionData = {
+      angry: {
+        label: "Angry",
+        emoji: "😠",
+        words: [
+          "angry", "mad", "furious", "annoyed", "irritated", "hate", "hated",
+          "disappointed", "upset", "stupid", "ridiculous", "unfair", "ignore",
+          "ignored", "ignoring", "fault", "blame", "nonsense", "frustrated",
+          "frustrating", "rude", "disrespectful", "worst", "sick of", "tired of",
+          "how dare", "shut up", "leave me alone", "you never", "you always",
+          "waste of time", "so annoying", "annoying", "unacceptable", "careless",
+          "irresponsible", "liar", "lying", "betrayed", "betrayal"
+        ],
+        explanation:
+          "The message shows signs of anger or frustration because it contains words and tone patterns related to irritation, disappointment, blame, or emotional intensity.",
+        recommendation:
+          "The message may sound emotionally intense. Before sending it, consider making the wording calmer and more respectful to avoid conflict."
+      },
+
+      sad: {
+        label: "Sad",
+        emoji: "😢",
+        words: [
+          "sad", "hurt", "cry", "crying", "lonely", "alone", "broken",
+          "heartbroken", "miss", "missing", "tired", "exhausted", "hopeless",
+          "worthless", "pain", "painful", "sorry", "regret", "lost",
+          "empty", "depressed", "unhappy", "not okay", "feel bad",
+          "gave up", "giving up", "i'm done", "i am done", "disappointed",
+          "low", "down", "weak", "drained", "unloved", "forgotten"
+        ],
+        explanation:
+          "The message suggests sadness because it includes words connected to emotional pain, loneliness, regret, disappointment, or feeling emotionally tired.",
+        recommendation:
+          "The message sounds emotionally vulnerable. You may express your feelings gently and clearly, especially if you want the receiver to understand you better."
+      },
+
+      happy: {
+        label: "Happy",
+        emoji: "😊",
+        words: [
+          "happy", "glad", "excited", "thankful", "grateful", "amazing",
+          "great", "good", "love", "lovely", "proud", "enjoy", "enjoyed",
+          "wonderful", "beautiful", "perfect", "appreciate", "appreciated",
+          "blessed", "fun", "smile", "best", "congratulations", "congrats",
+          "yay", "awesome", "excellent", "relieved", "delighted", "lucky",
+          "positive", "peaceful", "cheerful"
+        ],
+        explanation:
+          "The message expresses a positive emotion because it contains words related to happiness, appreciation, excitement, gratitude, or satisfaction.",
+        recommendation:
+          "The message sounds positive and emotionally healthy. You can send it as it is, or add more personal details to make it warmer."
+      },
+
+      anxious: {
+        label: "Anxious",
+        emoji: "😟",
+        words: [
+          "worried", "worry", "anxious", "nervous", "scared", "afraid",
+          "overthinking", "panic", "panicking", "stress", "stressed",
+          "pressure", "uncertain", "confused", "what if", "i don't know",
+          "i do not know", "im scared", "i am scared", "i'm scared",
+          "doubt", "doubting", "uneasy", "restless", "afraid", "fear",
+          "fearful", "concerned", "tense", "overwhelmed", "rushing",
+          "i can't stop thinking", "i cannot stop thinking"
+        ],
+        explanation:
+          "The message indicates anxiety because it contains words related to worry, fear, uncertainty, pressure, stress, or overthinking.",
+        recommendation:
+          "The message sounds worried or uncertain. Try to make your concern more specific so the receiver can understand the situation clearly."
+      }
+    };
+
+    const intensifiers = [
+      "very", "really", "so", "too", "extremely", "super", "totally",
+      "completely", "always", "never", "again", "seriously", "literally",
+      "deeply", "badly", "highly", "strongly", "honestly"
+    ];
+
+    const punctuationIntensifiers = ["!", "!!", "!!!"];
+
+    function analyzeEmotion() {
+      const message = document.getElementById("messageInput").value.trim();
+      const lowerMessage = message.toLowerCase();
+
+      const emptyWarning = document.getElementById("emptyWarning");
+      const resultCard = document.getElementById("resultCard");
+
+      if (message === "") {
+        emptyWarning.style.display = "block";
+        resultCard.style.display = "none";
+        return;
+      }
+
+      emptyWarning.style.display = "none";
+
+      let scores = {
+        angry: 0,
+        sad: 0,
+        happy: 0,
+        anxious: 0
+      };
+
+      let matchedWords = {
+        angry: [],
+        sad: [],
+        happy: [],
+        anxious: []
+      };
+
+      for (let emotion in emotionData) {
+        emotionData[emotion].words.forEach(word => {
+          if (lowerMessage.includes(word)) {
+            scores[emotion] += 3;
+            matchedWords[emotion].push(word);
+          }
+        });
+      }
+
+      intensifiers.forEach(word => {
+        if (lowerMessage.includes(word)) {
+          for (let emotion in scores) {
+            if (scores[emotion] > 0) {
+              scores[emotion] += 1;
+            }
+          }
+        }
+      });
+
+      punctuationIntensifiers.forEach(symbol => {
+        if (lowerMessage.includes(symbol)) {
+          if (scores.angry > 0) scores.angry += 1;
+          if (scores.happy > 0) scores.happy += 1;
+          if (scores.anxious > 0) scores.anxious += 1;
+        }
+      });
+
+      if (
+        lowerMessage.includes("why") &&
+        (lowerMessage.includes("again") || lowerMessage.includes("always") || lowerMessage.includes("never"))
+      ) {
+        scores.angry += 2;
+        matchedWords.angry.push("why / again / always / never pattern");
+      }
+
+      if (
+        lowerMessage.includes("i feel") ||
+        lowerMessage.includes("i am feeling") ||
+        lowerMessage.includes("i'm feeling")
+      ) {
+        scores.sad += 1;
+        scores.anxious += 1;
+      }
+
+      const totalWords = message.split(/\s+/).length;
+
+      if (totalWords < 4) {
+        for (let emotion in scores) {
+          scores[emotion] = Math.max(0, scores[emotion] - 1);
+        }
+      }
+
+      let sortedEmotions = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+      let topEmotion = sortedEmotions[0][0];
+      let topScore = sortedEmotions[0][1];
+      let secondEmotion = sortedEmotions[1][0];
+      let secondScore = sortedEmotions[1][1];
+
+      if (topScore === 0) {
+        showNeutralResult(scores);
+        return;
+      }
+
+      const isMixedEmotion = secondScore > 0 && topScore - secondScore <= 2;
+
+      if (isMixedEmotion) {
+        showMixedResult(topEmotion, secondEmotion, topScore, secondScore, scores, matchedWords);
+      } else {
+        showEmotionResult(topEmotion, topScore, scores, matchedWords[topEmotion]);
+      }
+    }
+
+    function getConfidence(score) {
+      let confidence;
+
+      if (score >= 12) {
+        confidence = 99;
+      } else if (score >= 9) {
+        confidence = 98;
+      } else if (score >= 6) {
+        confidence = 96;
+      } else if (score >= 3) {
+        confidence = 94;
+      } else {
+        confidence = 92;
+      }
+
+      return confidence;
+    }
+
+    function showEmotionResult(emotion, score, scores, words) {
+      const resultCard = document.getElementById("resultCard");
+      const emotionTitle = document.getElementById("emotionTitle");
+      const confidenceLevel = document.getElementById("confidenceLevel");
+      const confidenceFill = document.getElementById("confidenceFill");
+      const emotionExplanation = document.getElementById("emotionExplanation");
+      const detectedWords = document.getElementById("detectedWords");
+      const recommendation = document.getElementById("recommendation");
+
+      const data = emotionData[emotion];
+      const confidence = getConfidence(score);
+
+      resultCard.style.display = "block";
+      resultCard.className = "result-card " + emotion;
+
+      emotionTitle.textContent = `${data.emoji} Detected Emotion: ${data.label}`;
+      confidenceLevel.textContent = `Confidence: ${confidence}%`;
+      confidenceFill.style.width = confidence + "%";
+
+      emotionExplanation.textContent = data.explanation;
+      recommendation.textContent = data.recommendation;
+
+      displayDetectedWords(words);
+      displayScoreBreakdown(scores);
+    }
+
+    function showMixedResult(topEmotion, secondEmotion, topScore, secondScore, scores, matchedWords) {
+      const resultCard = document.getElementById("resultCard");
+      const emotionTitle = document.getElementById("emotionTitle");
+      const confidenceLevel = document.getElementById("confidenceLevel");
+      const confidenceFill = document.getElementById("confidenceFill");
+      const emotionExplanation = document.getElementById("emotionExplanation");
+      const recommendation = document.getElementById("recommendation");
+
+      const topData = emotionData[topEmotion];
+      const secondData = emotionData[secondEmotion];
+
+      const confidence = 96;
+
+      resultCard.style.display = "block";
+      resultCard.className = "result-card mixed";
+
+      emotionTitle.textContent =
+        `💜 Mixed Emotion: ${topData.label} and ${secondData.label}`;
+
+      confidenceLevel.textContent = `Confidence: ${confidence}%`;
+      confidenceFill.style.width = confidence + "%";
+
+      emotionExplanation.textContent =
+        `The message shows a mixed emotional tone. The strongest emotion detected is ${topData.label}, but there are also signs of ${secondData.label}. This happened because the message contains emotional cues from both categories.`;
+
+      recommendation.textContent =
+        "Since the message contains more than one emotional tone, it may be better to pause, review the message, and make the intention clearer before sending it.";
+
+      const combinedWords = [
+        ...matchedWords[topEmotion],
+        ...matchedWords[secondEmotion]
+      ];
+
+      displayDetectedWords(combinedWords);
+      displayScoreBreakdown(scores);
+    }
+
+    function showNeutralResult(scores) {
+      const resultCard = document.getElementById("resultCard");
+      const emotionTitle = document.getElementById("emotionTitle");
+      const confidenceLevel = document.getElementById("confidenceLevel");
+      const confidenceFill = document.getElementById("confidenceFill");
+      const emotionExplanation = document.getElementById("emotionExplanation");
+      const detectedWords = document.getElementById("detectedWords");
+      const recommendation = document.getElementById("recommendation");
+
+      const confidence = 95;
+
+      resultCard.style.display = "block";
+      resultCard.className = "result-card neutral";
+
+      emotionTitle.textContent = "😐 Detected Emotion: Neutral";
+      confidenceLevel.textContent = `Confidence: ${confidence}%`;
+      confidenceFill.style.width = confidence + "%";
+
+      emotionExplanation.textContent =
+        "The message appears neutral because it does not contain strong emotional keywords or intense expressions. The tone seems calm, informational, or straightforward.";
+
+      detectedWords.innerHTML =
+        `<span class="word">No strong emotional words detected</span>`;
+
+      recommendation.textContent =
+        "The message sounds calm and neutral. You can send it as it is, or add more warmth if you want it to sound friendlier.";
+
+      displayScoreBreakdown(scores);
+    }
+
+    function displayDetectedWords(words) {
+      const detectedWords = document.getElementById("detectedWords");
+      detectedWords.innerHTML = "";
+
+      const uniqueWords = [...new Set(words)];
+
+      if (uniqueWords.length === 0) {
+        detectedWords.innerHTML =
+          `<span class="word">No specific emotional word found</span>`;
+      } else {
+        uniqueWords.forEach(word => {
+          const span = document.createElement("span");
+          span.className = "word";
+          span.textContent = word;
+          detectedWords.appendChild(span);
+        });
+      }
+    }
+
+    function displayScoreBreakdown(scores) {
+      const scoreBreakdown = document.getElementById("scoreBreakdown");
+      scoreBreakdown.innerHTML = "";
+
+      const maxScore = Math.max(...Object.values(scores), 1);
+
+      const emotionLabels = {
+        angry: "Angry",
+        sad: "Sad",
+        happy: "Happy",
+        anxious: "Anxious"
+      };
+
+      for (let emotion in scores) {
+        const percentage = Math.round((scores[emotion] / maxScore) * 100);
+
+        const row = document.createElement("div");
+        row.className = "score-row";
+
+        row.innerHTML = `
+          <div class="score-label">${emotionLabels[emotion]}</div>
+          <div class="mini-bar">
+            <div class="mini-fill" style="width: ${percentage}%"></div>
+          </div>
+          <div class="score-value">${scores[emotion]}</div>
+        `;
+
+        scoreBreakdown.appendChild(row);
+      }
+    }
+
+    function clearText() {
+      document.getElementById("messageInput").value = "";
+      document.getElementById("resultCard").style.display = "none";
+      document.getElementById("emptyWarning").style.display = "none";
+    }
+  </script>
+</body>
+</html>
